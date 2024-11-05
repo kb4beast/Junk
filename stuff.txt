@@ -1,0 +1,128 @@
+// tool-details.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { FormBuilder, FormGroup, FormArray } from '@angular/forms';
+
+@Component({
+  selector: 'app-tool-details',
+  templateUrl: './tool-details.component.html',
+  styleUrls: ['./tool-details.component.css']
+})
+export class ToolDetailsComponent implements OnInit {
+  toolId: string;
+  toolDetails: any;
+  parameterForm: FormGroup;
+
+  constructor(
+    private route: ActivatedRoute,
+    private fb: FormBuilder
+  ) {
+    this.parameterForm = this.fb.group({
+      parameters: this.fb.array([])
+    });
+  }
+
+  ngOnInit(): void {
+    this.toolId = this.route.snapshot.paramMap.get('id'); // Get tool ID from route parameter
+    this.getToolDetails();
+  }
+
+  getToolDetails(): void {
+    // Mock tool details data (toolId is not mocked, taken from route)
+    this.toolDetails = {
+      id: this.toolId,
+      name: 'Mock Tool Name',
+      description: 'This is a mock tool description.',
+      parameterDetails: [
+        {
+          key: 'Parameter1',
+          paramType: 'String',
+          length: '50',
+          inOrOut: 'In',
+          isRequired: true,
+          validValueList: 'Value1,Value2,Value3'
+        },
+        {
+          key: 'Parameter2',
+          paramType: 'Integer',
+          length: '10',
+          inOrOut: 'Out',
+          isRequired: false,
+          validValueList: ''
+        }
+      ]
+    };
+    this.createParameterForm(this.toolDetails.parameterDetails);
+  }
+
+  createParameterForm(parameters): void {
+    const parameterArray = this.parameterForm.get('parameters') as FormArray;
+    parameters.forEach(param => {
+      parameterArray.push(this.fb.group({
+        key: [param.key],
+        paramType: [param.paramType],
+        length: [param.length],
+        inOrOut: [param.inOrOut],
+        isRequired: [param.isRequired],
+        validValueList: [param.validValueList || '']
+      }));
+    });
+  }
+
+  get parameters(): FormArray {
+    return this.parameterForm.get('parameters') as FormArray;
+  }
+
+  executeTool(): void {
+    if (this.parameterForm.valid) {
+      const toolExecutionDetails = {
+        toolId: this.toolId,
+        parameters: this.parameterForm.value.parameters
+      };
+      console.log('Mock Execution Details:', toolExecutionDetails);
+      // Mock result handling
+      console.log('Execution Result: Success');
+    } else {
+      console.error('Form is invalid');
+    }
+  }
+}
+
+// tool-details.component.html
+<div *ngIf="toolDetails">
+  <h2>{{ toolDetails.name }}</h2>
+  <p>{{ toolDetails.description }}</p>
+
+  <form [formGroup]="parameterForm">
+    <div formArrayName="parameters" *ngFor="let parameter of parameters.controls; let i = index">
+      <div [formGroupName]="i">
+        <label>{{ parameter.get('key').value }}</label>
+        <div>
+          <label>Type:</label>
+          <input type="text" formControlName="paramType" readonly>
+        </div>
+        <div>
+          <label>Length:</label>
+          <input type="text" formControlName="length" readonly>
+        </div>
+        <div>
+          <label>In/Out:</label>
+          <input type="text" formControlName="inOrOut" readonly>
+        </div>
+        <div>
+          <label>Is Required:</label>
+          <input type="checkbox" formControlName="isRequired" [disabled]="true">
+        </div>
+        <div *ngIf="parameter.get('validValueList').value">
+          <label>Valid Values:</label>
+          <select formControlName="validValueList">
+            <option *ngFor="let value of parameter.get('validValueList').value.split(',')" [value]="value">
+              {{ value }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button (click)="executeTool()">Execute</button>
+  </form>
+</div>
