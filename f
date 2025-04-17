@@ -11,7 +11,7 @@ $IncludeExtensions = @("*.cs", "*.csproj", "*.sln", "*.ts", "*.html", "*.json")
 
 Write-Host "`n📁 Starting content replacement..." -ForegroundColor Cyan
 
-# Replace file content
+# Replace content inside files
 Get-ChildItem -Path $Root -Recurse -File -Include $IncludeExtensions -Force |
     Where-Object {
         $dir = $_.Directory
@@ -29,7 +29,7 @@ Get-ChildItem -Path $Root -Recurse -File -Include $IncludeExtensions -Force |
 
 Write-Host "`n📂 Starting file/folder renaming..." -ForegroundColor Cyan
 
-# Combine files + directories, sort deepest first
+# Combine all files and directories, sort deepest-first
 $items = @(Get-ChildItem -Path $Root -Recurse -File -Force) + 
          @(Get-ChildItem -Path $Root -Recurse -Directory -Force)
 
@@ -39,15 +39,13 @@ $items |
         $ExcludeDirs -notcontains $_.Name
     } |
     ForEach-Object {
-        $oldPath = $_.FullName
         $newName = $_.Name
         $newName = [regex]::Replace($newName, $FromLower, $ToLower, 'IgnoreCase')
         $newName = [regex]::Replace($newName, $FromPascal, $ToPascal, 'IgnoreCase')
 
         if ($newName -ne $_.Name) {
-            $newPath = Join-Path -Path $_.DirectoryName -ChildPath $newName
-            Write-Host "✏️  Renaming: $oldPath -> $newPath" -ForegroundColor Yellow
-            Rename-Item -LiteralPath $oldPath -NewName $newName
+            Write-Host "✏️  Renaming: $($_.FullName) -> $newName" -ForegroundColor Yellow
+            Rename-Item -LiteralPath $_.FullName -NewName $newName
         }
     }
 
