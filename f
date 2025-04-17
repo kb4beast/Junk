@@ -2,33 +2,31 @@ $ExcludeDirs = @("bin", "obj", ".git", ".vs", "node_modules", "packages")
 $IncludeExtensions = @("*.cs", "*.csproj", "*.sln", "*.ts", "*.html", "*.json")
 
 $Root = "C:\Path\To\Your\App"
-$FromLower = 'from-lower'
-$FromPascal = 'FromLower'
-$ToLower = 'to-search'
-$ToPascal = 'ToSearch'
+$FromLower = 'a'
+$FromPascal = 'b' # don't worry about case here
+$ToLower = 'A'
+$ToPascal = 'B'
 
-# Rename file content
-Get-ChildItem -Path $Root -Recurse -File -Include $IncludeExtensions |
+# Replace file content
+Get-ChildItem -Path $Root -Recurse -File -Include $IncludeExtensions -Force |
     Where-Object { $ExcludeDirs -notcontains $_.Directory.Name } |
     ForEach-Object {
-        (Get-Content $_.FullName) `
-        -replace $FromLower, $ToLower `
-        -replace $FromPascal, $ToPascal |
-        Set-Content $_.FullName
+        $content = Get-Content $_.FullName -Raw
+        $content = [regex]::Replace($content, $FromLower, $ToLower, 'IgnoreCase')
+        $content = [regex]::Replace($content, $FromPascal, $ToPascal, 'IgnoreCase')
+        Set-Content $_.FullName $content
     }
 
 # Rename files and directories (bottom-up to avoid path errors)
-Get-ChildItem -Path $Root -Recurse -Directory, -File |
+Get-ChildItem -Path $Root -Recurse -File, -Directory -Force |
     Sort-Object FullName -Descending |
-    Where-Object {
-        $ExcludeDirs -notcontains $_.Name
-    } |
+    Where-Object { $ExcludeDirs -notcontains $_.Name } |
     ForEach-Object {
-        $newName = $_.Name `
-            -replace $FromLower, $ToLower `
-            -replace $FromPascal, $ToPascal
+        $newName = $_.Name
+        $newName = [regex]::Replace($newName, $FromLower, $ToLower, 'IgnoreCase')
+        $newName = [regex]::Replace($newName, $FromPascal, $ToPascal, 'IgnoreCase')
 
         if ($newName -ne $_.Name) {
-            Rename-Item $_.FullName -NewName $newName
+            Rename-Item -LiteralPath $_.FullName -NewName $newName
         }
     }
